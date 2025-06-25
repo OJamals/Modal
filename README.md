@@ -6,31 +6,37 @@ Qwen3-embedding has topped embedding benchmarks, easily beating both open and cl
 
 ## Quick Start
 
-**Option 1: Automated Setup (Recommended)**
+**Automated Setup (Recommended)**
 ```bash
-# Download and optimize a Qwen3 model, then setup everything
+# One-command setup: downloads model, optimizes, and configures everything
 ./setup.sh
 ```
 
-**Option 2: Manual Setup**
+This automated script:
+- Downloads Qwen3-Embedding-0.6B model (Q8_0-optimized) via Ollama
+- Extracts and optimizes the GGUF model from Ollama storage  
+- Creates optimized Ollama model for embedding-only usage
+- Installs Python dependencies and starts all services
+- Sets up Qdrant vector database with proper configuration
+- Runs comprehensive tests to verify everything works
+
+**Manual Setup (Advanced Users)**
 ```bash
-# 1. Download and optimize a Qwen3 model
+# 1. Download and optimize Qwen3 model
 ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
-python optimize_gguf.py
+python optimize_gguf.py hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 qwen3-embedding
 
-# 2. Install dependencies and start API
+# 2. Install dependencies and start services
 pip install -r requirements.txt
-python qwen3-api.py &
-
-# 3. Start Qdrant and setup vector store
 docker run -d --name qdrant -p 6333:6333 -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
+python qwen3-api.py &
 python qdrantsetup.py
 
-# 4. Verify everything works
+# 3. Verify everything works
 python test_setup.py
 ```
 
-**Ready to use with RooCode!** Use the configuration values shown in the test output.
+**Ready to use with RooCode!** The setup script displays the exact configuration values needed.
 
 ## What We Built
 
@@ -50,56 +56,76 @@ This setup provides a complete, optimized embedding pipeline:
 
 ## Complete Setup Guide
 
-### Step 1: Download Qwen3 Model via Ollama
+### Automated Setup (Recommended)
 
-Choose and download a Qwen3 embedding model:
+The setup script handles everything automatically:
 
 ```bash
-# Recommended: Q8_0 quantized (best quality/size balance)
+# Prerequisites: Docker and Ollama must be installed
+# Docker: https://docs.docker.com/get-docker/
+# Ollama: curl -fsSL https://ollama.ai/install.sh | sh
+
+# Run the complete setup
+./setup.sh
+
+# The script automatically:
+# 1. Downloads Qwen3-Embedding-0.6B (Q8_0) via Ollama
+# 2. Extracts and optimizes the GGUF model from Ollama storage
+# 3. Creates embedding-optimized Ollama model
+# 4. Installs Python dependencies
+# 5. Starts Qdrant vector database with proper configuration
+# 6. Launches OpenAI-compatible API wrapper
+# 7. Sets up optimized vector store collection
+# 8. Runs comprehensive verification tests
+# 9. Displays RooCode configuration values
+```
+
+### Manual Setup (Advanced Users)
+
+For manual control over the process:
+
+#### Step 1: Download and Optimize Model
+
+```bash
+# Download the Q8_0 quantized model (best quality/size balance)
 ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
 
-# Alternative: Q4_K_M quantized (smaller, faster)  
-ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q4_K_M
-
-# Verify download
-ollama list | grep qwen3
-```
-
-### Step 2: Optimize the GGUF Model
-
-Extract and optimize the model from Ollama's storage:
-
-```bash
-# Interactive mode - shows available models
-python optimize_gguf.py
-
-# Or specify directly
-python optimize_gguf.py "hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0" "qwen3-embedding"
+# Extract and optimize from Ollama storage
+python optimize_gguf.py hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 qwen3-embedding
 
 # This creates:
-# - qwen3-embedding.gguf (optimized copy)
-# - Modelfile (embedding-specific optimizations)  
-# - qwen3-embedding model in Ollama
+# - qwen3-embedding-0.6b.gguf (optimized local copy)
+# - Optimized Ollama model for embedding-only usage
 ```
 
-### Step 3: Start OpenAI-Compatible API Wrapper
-
-Launch the optimized FastAPI wrapper:
+#### Step 2: Start Services
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the API wrapper
-python qwen3-api.py
-# ✅ API running on http://localhost:8000
-# ✅ RooCode compatible with base64 encoding
-# ✅ 1024-dimensional embeddings
+# Start Qdrant vector database
+docker run -d --name qdrant \
+    -p 6333:6333 -p 6334:6334 \
+    -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" \
+    -v $(pwd)/qdrant_storage:/qdrant/storage \
+    qdrant/qdrant
+
+# Start OpenAI-compatible API wrapper
+python qwen3-api.py &
 ```
 
-### Step 4: Setup Optimized Qdrant Vector Store
+#### Step 3: Setup Vector Store
 
-Start Qdrant and create optimized collection:
+```bash
+# Configure optimized Qdrant collection
+python qdrantsetup.py
+
+# Verify everything works
+python test_setup.py
+```
+
+#### 2.4: Setup Qdrant Vector Store
 
 ```bash
 # Start Qdrant with Docker
@@ -112,21 +138,25 @@ python qdrantsetup.py
 # ✅ Adds sample documents for validation
 ```
 
-### Step 5: RooCode Integration Settings
+## RooCode Integration
 
-Configure RooCode with these exact values:
+After running the setup script, you'll see the exact configuration values needed for RooCode integration:
 
 ```yaml
-# Configuration
+# RooCode Configuration (displayed by setup script)
 Embeddings Provider: OpenAI-compatible
 Base URL: http://localhost:8000
 API Key: your-super-secret-qdrant-api-key
 Model: qwen3
 Embedding Dimension: 1024
+
+# Vector Database Configuration
 Qdrant URL: http://localhost:6333
 Qdrant API Key: your-super-secret-qdrant-api-key
 Collection Name: qwen3_embedding
 ```
+
+Simply copy these values into your RooCode settings after running `./setup.sh`.
 
 ## Usage Examples
 
@@ -164,23 +194,23 @@ vs.add_document("Python is a programming language", {"category": "tech"})
 results = vs.search("What is Python?", filters={"category": "tech"})
 ```
 
-### Test & Validation
+## Verification & Testing
+
+The setup script automatically runs comprehensive tests, but you can also run them manually:
 
 ```bash
-# Comprehensive setup verification
+# Complete system verification (run after setup)
 python test_setup.py
-# ✅ Tests all services and configuration
-# ✅ Verifies RooCode compatibility
-# ✅ Shows ready-to-use configuration values
+# ✅ Tests all services and API endpoints
+# ✅ Verifies embedding generation and vector storage
+# ✅ Confirms RooCode compatibility
+# ✅ Displays configuration values for easy copy-paste
 
-# Test individual components
-python test_roocode_compatibility.py  # RooCode compatibility
-python qdrantsetup.py                 # Qdrant setup and performance
-
-# Manual health checks
-curl http://localhost:8000/health      # API health
-curl http://localhost:6333/health      # Qdrant health
-curl http://localhost:11434/api/tags   # Ollama models
+# Test individual components if needed
+python qdrantsetup.py                 # Test Qdrant setup and indexing
+curl http://localhost:8000/health      # API health check
+curl http://localhost:6333/health      # Qdrant health check
+curl http://localhost:11434/api/tags   # List Ollama models
 ```
 
 ## API Endpoints

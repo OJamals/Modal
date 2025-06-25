@@ -9,24 +9,10 @@ echo "🚀 Setting up Qwen3 Embedding for RooCode..."
 echo "============================================="
 
 # Check if required files exist
-if [ ! -f "qwen3-embedding-0.6b.gguf" ]; then
-    echo "❌ qwen3-embedding-0.6b.gguf not found!"
-    echo "Please ensure the GGUF model file is in the current directory."
-    exit 1
-fi
-
 if [ ! -f "requirements.txt" ]; then
     echo "❌ requirements.txt not found!"
     exit 1
 fi
-
-# Step 1: Setup Ollama model
-echo "📦 Step 1: Setting up Ollama model..."
-cat > Modelfile << EOF
-FROM ./qwen3-embedding-0.6b.gguf
-PARAMETER num_ctx 8192
-PARAMETER embedding_only true
-EOF
 
 # Check if ollama is available
 if ! command -v ollama &> /dev/null; then
@@ -35,10 +21,54 @@ if ! command -v ollama &> /dev/null; then
     exit 1
 fi
 
-# Create the model in Ollama
-echo "Creating qwen3-embedding model in Ollama..."
-ollama create qwen3-embedding -f Modelfile
-echo "✅ Ollama model created successfully"
+# Step 1: Download and optimize GGUF model
+echo "📦 Step 1: Setting up Qwen3 embedding model..."
+
+# Check if model already exists locally
+if [ ! -f "qwen3-embedding-0.6b.gguf" ]; then
+    echo "🔍 GGUF model not found locally. Checking Ollama models..."
+    
+    # Check if model exists in Ollama
+    if ! ollama list | grep -q "qwen3.*embedding"; then
+        echo "📥 Downloading Qwen3-Embedding-0.6B model (Q8_0-optimized)..."
+        ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
+        
+        # Wait a moment for the model to be fully registered
+        sleep 2
+    fi
+    
+    # Run GGUF optimizer to extract and optimize the model
+    echo "� Optimizing GGUF model from Ollama storage..."
+    if python optimize_gguf.py hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 qwen3-embedding; then
+        echo "✅ GGUF model optimized successfully"
+    else
+        echo "❌ Failed to optimize GGUF model"
+        echo "Trying alternative approach..."
+        
+        # Alternative: create Modelfile without local GGUF
+        cat > Modelfile << EOF
+FROM hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
+PARAMETER num_ctx 8192
+PARAMETER embedding_only true
+EOF
+        ollama create qwen3-embedding -f Modelfile
+        echo "✅ Ollama model created from remote GGUF"
+    fi
+else
+    echo "✅ Local GGUF model found: qwen3-embedding-0.6b.gguf"
+    
+    # Create optimized Modelfile for local GGUF
+    cat > Modelfile << EOF
+FROM ./qwen3-embedding-0.6b.gguf
+PARAMETER num_ctx 8192
+PARAMETER embedding_only true
+EOF
+    
+    # Create the model in Ollama
+    echo "🔧 Creating optimized Ollama model..."
+    ollama create qwen3-embedding -f Modelfile
+    echo "✅ Ollama model created successfully"
+fi
 
 # Step 2: Install Python dependencies
 echo "📦 Step 2: Installing Python dependencies..."
