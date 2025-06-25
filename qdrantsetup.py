@@ -56,7 +56,7 @@ class OptimizedQdrantVectorStore:
                 f"{self.embedding_api_url}/v1/embeddings",
                 json={
                     "input": text,
-                    "model": "qwen3",
+                    "model": "qwen3-embedding",
                     "encoding_format": "float"  # Use float format for Qdrant
                 },
                 headers={"Content-Type": "application/json"},
