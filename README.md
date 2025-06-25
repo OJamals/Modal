@@ -157,8 +157,8 @@ After running the setup script, you'll see the exact configuration values needed
 Embeddings Provider: OpenAI-compatible
 Base URL: http://localhost:8000
 API Key: your-super-secret-qdrant-api-key
-Model: qwen3
-Embedding Dimension: 1024
+Model: qwen3-embedding
+Embedding Dimension: 1024 # 4B upto 2560; 8B upto 4096
 
 # Vector Database Configuration
 Qdrant URL: http://localhost:6333
@@ -343,7 +343,7 @@ sudo docker run -d --name qdrant ...
 
 ### Performance Tuning
 
-- **Memory**: The Q8_0 model uses ~610MB RAM
+- **Memory**: The Q8_0 model uses ~610MB
 - **CPU**: Embedding generation is CPU-intensive
 - **Disk**: Qdrant stores vectors on disk, ensure sufficient space
 - **Batch Size**: For large codebases, process in batches of 100-500 files
