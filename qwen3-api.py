@@ -17,24 +17,38 @@ import hashlib
 import json
 import os
 
-# Configuration for Qwen3-Embedding-0.6B
+# Configuration for Qwen3-Embedding-0.6B with Developer Recommendations
 MODEL_CONFIG = {
-    "model_name": "hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0-optimized",
+    "model_name": "qwen3-embedding",  # Local optimized model
     "dimensions": 1024,
     "max_context_length": 32768,
     "temperature": 0.0,
     "supports_instructions": True,
+    "supports_mrl": True,  # Matryoshka Representation Learning
+    "available_dimensions": [512, 768, 1024],  # MRL supported dimensions
     "quantization": "Q8_0",
     "size_mb": 600,
-    "use_case": "Lightweight tasks, mobile applications, edge devices"
+    "use_case": "Instruction-aware embedding with MRL support",
+    "performance_improvement": "1-5% with task-specific instructions"
 }
 
 class EmbeddingRequest(BaseModel):
-    """OpenAI-compatible embedding request"""
+    """OpenAI-compatible embedding request with Qwen3 enhancements"""
     input: Union[str, List[str]] = Field(..., description="Text to embed")
     model: str = Field(default=MODEL_CONFIG["model_name"], description="Model to use")
     encoding_format: str = Field(default="float", description="Encoding format (float or base64)")
-    dimensions: Optional[int] = Field(default=MODEL_CONFIG["dimensions"], description="Output dimensions")
+    dimensions: Optional[int] = Field(
+        default=MODEL_CONFIG["dimensions"], 
+        description="Output dimensions (512, 768, or 1024 for MRL support)"
+    )
+    instruction: Optional[str] = Field(
+        default=None, 
+        description="Task-specific instruction for better performance (Qwen recommendation)"
+    )
+    task: Optional[str] = Field(
+        default="text_search", 
+        description="Task type for automatic instruction selection"
+    )
     user: Optional[str] = Field(default=None, description="User ID")
 
 class EmbeddingData(BaseModel):
@@ -89,23 +103,36 @@ class Qwen3_0_6B_EmbeddingAPI:
             pass
         return None
     
-    def _prepare_text_for_embedding(self, text: str, task: str = "code_indexing") -> str:
-        """Prepare text with optimal instruction formatting for 0.6B model"""
-        # Instruction mapping for different tasks
+    def _prepare_text_for_embedding(self, text: str, task: str = "text_search", custom_instruction: Optional[str] = None) -> str:
+        """
+        Prepare text with instruction-aware formatting (Qwen developer recommendation)
+        Achieves 1-5% performance improvement with task-specific instructions
+        """
+        # Enhanced instruction mapping based on Qwen recommendations
         instruction_map = {
-            "code_indexing": "Instruct: Given a code snippet, retrieve related code implementations and documentation",
-            "text_search": "Instruct: Given a search query, retrieve relevant text passages and documentation", 
-            "clustering": "Instruct: Given a text snippet, cluster it with similar content",
-            "classification": "Instruct: Given a text snippet, classify it into appropriate categories"
+            "text_search": "Represent this text for semantic search and retrieval:",
+            "code_search": "Represent this code for semantic search and similarity matching:",
+            "code_indexing": "Represent this code for indexing and retrieval:",
+            "document_retrieval": "Represent this document for retrieval and similarity search:",
+            "question_answering": "Represent this text for question-answering tasks:",
+            "clustering": "Represent this text for clustering and categorization:",
+            "classification": "Represent this text for classification tasks:",
+            "similarity": "Represent this text for semantic similarity comparison:",
+            "general": "Represent this text for semantic understanding:"
         }
         
         if MODEL_CONFIG["supports_instructions"]:
-            instruction = instruction_map.get(task, instruction_map["text_search"])
-            # Use optimal format: Instruction + Query + endoftext token
-            formatted_text = f"{instruction}\nQuery: {text}<|endoftext|>"
+            # Use custom instruction if provided, otherwise use task-specific instruction
+            if custom_instruction:
+                instruction = custom_instruction
+            else:
+                instruction = instruction_map.get(task, instruction_map["text_search"])
+            
+            # Qwen3-Embedding optimal format: Instruction + Text
+            formatted_text = f"{instruction}\n{text}"
         else:
-            # Fallback to simple endoftext token
-            formatted_text = f"{text}<|endoftext|>"
+            # Fallback for non-instruction models
+            formatted_text = text
             
         return formatted_text
     
@@ -125,17 +152,49 @@ class Qwen3_0_6B_EmbeddingAPI:
         bytes_data = float32_array.tobytes()
         return base64.b64encode(bytes_data).decode('utf-8')
     
-    def _generate_single_embedding(self, text: str, use_cache: bool = True) -> List[float]:
-        """Generate embedding for a single text"""
+    def _apply_mrl_truncation(self, embedding: List[float], target_dimensions: int) -> List[float]:
+        """
+        Apply MRL (Matryoshka Representation Learning) truncation to custom dimensions
+        Qwen3-Embedding supports 512, 768, and 1024 dimensions
+        """
+        if target_dimensions not in MODEL_CONFIG["available_dimensions"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported dimension {target_dimensions}. "
+                       f"Supported dimensions: {MODEL_CONFIG['available_dimensions']}"
+            )
+        
+        if target_dimensions >= len(embedding):
+            return embedding  # No truncation needed
+        
+        # Truncate to target dimensions (MRL property)
+        truncated = embedding[:target_dimensions]
+        
+        # Renormalize the truncated embedding
+        np_embedding = np.array(truncated)
+        norm = np.linalg.norm(np_embedding)
+        if norm > 0:
+            return (np_embedding / norm).tolist()
+        return truncated
+
+    def _generate_single_embedding(
+        self, 
+        text: str, 
+        task: str = "text_search",
+        custom_instruction: Optional[str] = None,
+        target_dimensions: Optional[int] = None,
+        use_cache: bool = True
+    ) -> List[float]:
+        """Generate embedding for a single text with Qwen developer recommendations"""
         # Check cache first
         if use_cache:
-            cache_key = self._get_cache_key(text)
+            cache_key = self._get_cache_key(f"{text}|{task}|{custom_instruction}|{target_dimensions}")
             cached_embedding = self._load_from_cache(cache_key)
             if cached_embedding is not None:
                 return cached_embedding
         
-        # Prepare text with optimal formatting
-        formatted_text = self._prepare_text_for_embedding(text)
+        # Prepare text with instruction-aware formatting (1-5% improvement)
+        formatted_text = self._prepare_text_for_embedding(text, task, custom_instruction)
         
         # Generate embedding via Ollama
         try:
@@ -162,6 +221,10 @@ class Qwen3_0_6B_EmbeddingAPI:
                 # Normalize embedding
                 normalized_embedding = self._normalize_embedding(embedding)
                 
+                # Apply MRL truncation if requested (Qwen developer feature)
+                if target_dimensions and MODEL_CONFIG["supports_mrl"]:
+                    normalized_embedding = self._apply_mrl_truncation(normalized_embedding, target_dimensions)
+                
                 # Cache result
                 if use_cache:
                     self._save_to_cache(cache_key, normalized_embedding)
@@ -183,16 +246,28 @@ class Qwen3_0_6B_EmbeddingAPI:
         except requests.RequestException as e:
             raise HTTPException(status_code=503, detail=f"Ollama service unavailable: {str(e)}")
     
-    def generate_embeddings(self, texts: List[str], encoding_format: str = "float") -> EmbeddingResponse:
-        """Generate embeddings for multiple texts with proper encoding format support"""
+    def generate_embeddings(
+        self, 
+        texts: List[str], 
+        encoding_format: str = "float",
+        task: str = "text_search",
+        custom_instruction: Optional[str] = None,
+        target_dimensions: Optional[int] = None
+    ) -> EmbeddingResponse:
+        """Generate embeddings with Qwen developer recommendations (instruction-aware + MRL)"""
         start_time = time.time()
         embeddings = []
         total_tokens = 0
         
         for i, text in enumerate(texts):
             try:
-                # Get normalized float embedding
-                float_embedding = self._generate_single_embedding(text)
+                # Get embedding with instruction-aware formatting and MRL support
+                float_embedding = self._generate_single_embedding(
+                    text=text,
+                    task=task,
+                    custom_instruction=custom_instruction,
+                    target_dimensions=target_dimensions
+                )
                 
                 # Convert to requested format
                 if encoding_format == "base64":
@@ -304,8 +379,22 @@ async def create_embeddings(request: EmbeddingRequest):
             detail="encoding_format must be 'float' or 'base64'"
         )
     
-    # Generate embeddings with proper encoding format
-    return embedding_api.generate_embeddings(texts, request.encoding_format)
+    # Validate dimensions for MRL support
+    if request.dimensions and request.dimensions not in MODEL_CONFIG["available_dimensions"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported dimension {request.dimensions}. "
+                   f"Supported: {MODEL_CONFIG['available_dimensions']}"
+        )
+    
+    # Generate embeddings with Qwen developer recommendations
+    return embedding_api.generate_embeddings(
+        texts=texts,
+        encoding_format=request.encoding_format,
+        task=request.task or "text_search",
+        custom_instruction=request.instruction,
+        target_dimensions=request.dimensions
+    )
 
 @app.post("/embeddings", response_model=EmbeddingResponse)
 async def create_embeddings_legacy(request: EmbeddingRequest):
@@ -314,7 +403,7 @@ async def create_embeddings_legacy(request: EmbeddingRequest):
 
 @app.get("/v1/models")
 async def list_models():
-    """List available models (OpenAI-compatible)"""
+    """List available models with Qwen3 feature information"""
     return {
         "object": "list",
         "data": [
@@ -325,7 +414,17 @@ async def list_models():
                 "owned_by": "qwen",
                 "permission": [],
                 "root": MODEL_CONFIG["model_name"],
-                "parent": None
+                "parent": None,
+                "qwen_features": {
+                    "instruction_aware": MODEL_CONFIG["supports_instructions"],
+                    "mrl_support": MODEL_CONFIG["supports_mrl"],
+                    "available_dimensions": MODEL_CONFIG["available_dimensions"],
+                    "performance_improvement": MODEL_CONFIG["performance_improvement"],
+                    "recommended_tasks": [
+                        "text_search", "code_search", "document_retrieval",
+                        "question_answering", "clustering", "classification"
+                    ]
+                }
             }
         ]
     }

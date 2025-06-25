@@ -136,8 +136,10 @@ class GGUFOptimizer:
             print(f"❌ Error copying file: {e}")
             return False
         
-        # Create optimized Modelfile
+        # Create optimized Modelfile with Qwen developer recommendations
         modelfile_content = f"""FROM ./{target_name}.gguf
+
+# Qwen Developer Recommendations for Embedding Models
 
 # Embedding-specific optimizations
 PARAMETER num_ctx 8192
@@ -150,6 +152,23 @@ PARAMETER use_mlock false
 PARAMETER repeat_penalty 1.0
 PARAMETER temperature 0.0
 PARAMETER top_p 1.0
+
+# Qwen3-Embedding specific settings
+# MRL (Matryoshka Representation Learning) Support
+# Supports custom dimensions: 512, 768, 1024 (full)
+PARAMETER embedding_dimension 1024
+
+# Instruction-Aware Embedding Support
+# The model benefits from task-specific instructions
+# Default instruction template for general embedding tasks
+TEMPLATE \"\"\"{{ if .System }}{{ .System }}{{ end }}{{ if .Prompt }}{{ .Prompt }}{{ end }}\"\"\"
+
+# System message for instruction-aware embedding
+SYSTEM \"\"\"You are an embedding model. Process the following text and generate a high-quality vector representation. Focus on semantic meaning and context.\"\"\"
+
+# Additional Qwen optimizations
+PARAMETER rope_frequency_base 1000000
+PARAMETER rope_frequency_scale 1.0
 """
         
         modelfile_path = Path("Modelfile")
@@ -167,11 +186,91 @@ PARAMETER top_p 1.0
                 text=True
             )
             print(f"✅ Registered optimized model as '{target_name}' in Ollama")
+            
+            # Create instruction-aware templates (Qwen developer recommendation)
+            print(f"\n🎯 Creating instruction-aware embedding templates...")
+            self.create_instruction_templates(target_name)
+            
             return True
         except subprocess.CalledProcessError as e:
             print(f"❌ Error registering model with Ollama: {e}")
             return False
     
+    def create_instruction_templates(self, target_name: str) -> None:
+        """Create instruction templates for different embedding tasks (Qwen developer recommendation)."""
+        templates = {
+            "code_search": {
+                "description": "For code search and programming tasks",
+                "instruction": "Represent this code for semantic search and similarity matching:",
+                "system": "You are an embedding model specialized in code understanding. Generate embeddings that capture programming concepts, logic, and semantic meaning."
+            },
+            "document_retrieval": {
+                "description": "For document and text retrieval",
+                "instruction": "Represent this document for retrieval and similarity search:",
+                "system": "You are an embedding model for document retrieval. Focus on key concepts, topics, and semantic relationships."
+            },
+            "question_answering": {
+                "description": "For question-answering systems",
+                "instruction": "Represent this text for question-answering tasks:",
+                "system": "You are an embedding model for QA systems. Capture factual information and answerable content."
+            },
+            "clustering": {
+                "description": "For text clustering and categorization",
+                "instruction": "Represent this text for clustering and categorization:",
+                "system": "You are an embedding model for text clustering. Focus on distinguishing features and categorical similarities."
+            },
+            "general": {
+                "description": "General purpose embedding",
+                "instruction": "Represent this text for semantic similarity:",
+                "system": "You are a general-purpose embedding model. Generate high-quality vector representations capturing semantic meaning."
+            }
+        }
+        
+        # Create instruction template files
+        templates_dir = Path("instruction_templates")
+        templates_dir.mkdir(exist_ok=True)
+        
+        for task, config in templates.items():
+            modelfile_content = f"""FROM ./{target_name}.gguf
+
+# Qwen3-Embedding Instruction-Aware Template: {config['description']}
+# Based on Qwen developer recommendations for 1-5% performance improvement
+
+# Embedding-specific optimizations
+PARAMETER num_ctx 8192
+PARAMETER embedding_only true
+PARAMETER num_thread {os.cpu_count() or 4}
+PARAMETER use_mmap true
+PARAMETER use_mlock false
+
+# MRL Support - Custom dimensions (512, 768, 1024)
+PARAMETER embedding_dimension 1024
+
+# Task-specific instruction template
+TEMPLATE \"\"\"{{ if .System }}{{ .System }}
+{{ end }}{config['instruction']} {{ .Prompt }}\"\"\"
+
+SYSTEM \"\"\"{config['system']}\"\"\"
+
+# Performance settings
+PARAMETER repeat_penalty 1.0
+PARAMETER temperature 0.0
+PARAMETER top_p 1.0
+PARAMETER rope_frequency_base 1000000
+PARAMETER rope_frequency_scale 1.0
+"""
+            
+            template_file = templates_dir / f"Modelfile.{task}"
+            with open(template_file, 'w') as f:
+                f.write(modelfile_content)
+        
+        print(f"✅ Created instruction templates in {templates_dir}/")
+        print("📋 Available task-specific templates:")
+        for task, config in templates.items():
+            print(f"   • {task}: {config['description']}")
+        print(f"\n💡 To use a specific template:")
+        print(f"   ollama create {target_name}-{'{task}'} -f instruction_templates/Modelfile.{'{task}'}")
+
     def optimize_model(self, model_name: str, output_name: str = "qwen3-embedding") -> bool:
         """Main optimization workflow."""
         print(f"🔍 Optimizing model: {model_name}")
@@ -236,12 +335,19 @@ def main():
     success = optimizer.optimize_model(model_name, output_name)
     
     if success:
-        print("\n🎉 Optimization complete!")
-        print(f"\n📝 Next steps:")
+        print("\n🎉 Optimization complete with Qwen developer recommendations!")
+        print(f"\n� Qwen3-Embedding Features:")
+        print(f"   • MRL Support: Custom dimensions (512, 768, 1024)")
+        print(f"   • Instruction-Aware: 1-5% performance improvement with task-specific instructions")
+        print(f"   • Optimized for embedding-only usage")
+        print(f"\n�📝 Next steps:")
         print(f"1. Start the API: python qwen3-api.py")
         print(f"2. Setup Qdrant: python qdrantsetup.py")
         print(f"3. Test everything: python test_setup.py")
-        print(f"\n🔧 Model name for API: {output_name}")
+        print(f"\n🔧 Model configurations:")
+        print(f"   • General model: {output_name}")
+        print(f"   • Task-specific models: {output_name}-code_search, {output_name}-document_retrieval, etc.")
+        print(f"\n💡 For best results, use task-specific instructions in your embedding requests")
         return 0
     else:
         print("\n❌ Optimization failed. Check the errors above.")
