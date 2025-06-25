@@ -18,7 +18,6 @@ This automated script:
 - Creates optimized Ollama model for embedding-only usage
 - Installs Python dependencies and starts all services
 - Sets up Qdrant vector database with proper configuration
-- Runs comprehensive tests to verify everything works
 
 **Manual Setup (Advanced Users)**
 ```bash
@@ -31,9 +30,6 @@ pip install -r requirements.txt
 docker run -d --name qdrant -p 6333:6333 -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 python qdrantsetup.py
 python qwen3-api.py
-
-# 3. Verify everything works
-python test_qwen_features.py
 ```
 
 **Ready to use with RooCode!** The setup script displays the exact configuration values needed.
@@ -84,8 +80,7 @@ The setup script handles everything automatically:
 # 5. Starts Qdrant vector database with proper configuration
 # 6. Launches OpenAI-compatible API wrapper
 # 7. Sets up optimized vector store collection
-# 8. Runs comprehensive verification tests
-# 9. Displays RooCode configuration values
+# 8. Displays RooCode configuration values
 ```
 
 ### Manual Setup (Advanced Users)
