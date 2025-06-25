@@ -22,7 +22,7 @@ This automated script:
 
 **Manual Setup (Advanced Users)**
 ```bash
-# 1. Download and optimize Qwen3 model
+# 1. Download and optimize Qwen3 model (0.6b:Q8 recommended, 4B:Q4 best)
 ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
 python optimize_gguf.py hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 qwen3-embedding
 

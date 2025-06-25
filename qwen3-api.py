@@ -20,14 +20,14 @@ import os
 # Universal Configuration with Developer Recommendations
 MODEL_CONFIG = {
     "model_name": "qwen3-embedding",  # Local optimized model
-    "dimensions": 1024, # 4B = up to 2560, 8B = up to 4096
+    "dimensions": 2560, # 4B = up to 2560, 8B = up to 4096
     "max_context_length": 32768,
     "temperature": 0.0,
     "supports_instructions": True,
     "supports_mrl": True,  # Matryoshka Representation Learning
     "available_dimensions": [512, 768, 1024],  # MRL supported dimensions
     "quantization": "Q8_0",
-    "size_mb": 600, # 4B:Q4 = 2500 MB, 8B:Q4 = 4700 MB
+    "size_mb": 2500, # 4B:Q4 = 2500 MB, 8B:Q4 = 4700 MB
     "use_case": "Instruction-aware embedding with MRL support",
     "performance_improvement": "1-5% with task-specific instructions"
 }
