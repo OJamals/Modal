@@ -40,13 +40,23 @@ python test_setup.py
 
 ## What We Built
 
-This setup provides a complete, optimized embedding pipeline:
+This setup provides a complete, optimized embedding pipeline with **Qwen developer recommendations**:
 
 - **GGUF Model Optimizer**: `optimize_gguf.py` - Extracts and optimizes any Qwen3 model from Ollama
-- **Ollama Integration**: Serves optimized models with automatic memory management  
+- **Instruction-Aware Embedding**: Task-specific instructions for 1-5% performance improvement  
+- **MRL Support**: Matryoshka Representation Learning with 512, 768, and 1024 dimensions
 - **OpenAI-Compatible API**: `qwen3-api.py` wrapper with RooCode base64 encoding support
 - **Optimized Qdrant Vector Store**: `qdrantsetup.py` with performance tuning for 1024-dimensional vectors
+- **Task-Specific Templates**: Code search, document retrieval, Q&A, clustering, and more
 - **Complete RooCode Integration**: Ready-to-use with proper API keys and endpoints
+
+### Qwen Developer Recommendations Implemented
+
+✅ **Instruction-Aware Embedding**: Automatic task-specific instruction formatting  
+✅ **MRL (Matryoshka Representation Learning)**: Custom dimension support (512/768/1024)  
+✅ **Performance Optimization**: 1-5% improvement with tailored instructions  
+✅ **Task-Specific Templates**: Optimized for different use cases  
+✅ **Default Configurations**: Works out-of-the-box with optimal settings
 
 ## Services
 
@@ -160,19 +170,61 @@ Simply copy these values into your RooCode settings after running `./setup.sh`.
 
 ## Usage Examples
 
-### OpenAI-Compatible API
+### OpenAI-Compatible API with Qwen Features
 ```python
 import requests
 
-# Generate embeddings using the optimized API
+# Basic embedding (uses default "text_search" task)
 response = requests.post("http://localhost:8000/v1/embeddings", json={
     "input": "Your text to embed",
     "model": "qwen3",
-    "encoding_format": "float"  # or "base64" for RooCode
+    "encoding_format": "float"
+})
+
+# Task-specific embedding (1-5% performance improvement)
+response = requests.post("http://localhost:8000/v1/embeddings", json={
+    "input": "def fibonacci(n): return n if n <= 1 else fibonacci(n-1) + fibonacci(n-2)",
+    "model": "qwen3",
+    "task": "code_search",  # Optimized for code
+    "encoding_format": "float"
+})
+
+# Custom instruction embedding (maximum performance)
+response = requests.post("http://localhost:8000/v1/embeddings", json={
+    "input": "Advanced machine learning concepts",
+    "model": "qwen3", 
+    "instruction": "Represent this text for academic research and similarity:",
+    "encoding_format": "float"
+})
+
+# MRL - Custom dimensions (Matryoshka Representation Learning)
+response = requests.post("http://localhost:8000/v1/embeddings", json={
+    "input": "Text for lower-dimensional embedding", 
+    "model": "qwen3",
+    "dimensions": 768,  # Instead of default 1024
+    "encoding_format": "float"
 })
 
 embeddings = response.json()["data"][0]["embedding"]
-print(f"Vector dimensions: {len(embeddings)}")  # Should be 1024
+print(f"Generated {len(embeddings)}-dimensional embedding")
+```
+
+### Task-Specific Instructions (Qwen Recommendation)
+```python
+# Available tasks with automatic instruction formatting:
+tasks = [
+    "text_search",      # General semantic search (default)
+    "code_search",      # Code and programming tasks  
+    "document_retrieval", # Document and text retrieval
+    "question_answering", # Q&A systems
+    "clustering",       # Text clustering and categorization
+    "classification",   # Classification tasks
+    "similarity",       # Semantic similarity comparison
+    "general"          # General purpose embedding
+]
+
+# Each task automatically applies the optimal instruction format
+# for 1-5% performance improvement as recommended by Qwen developers
 ```
 
 ### Vector Storage with Optimized Qdrant
@@ -206,12 +258,44 @@ python test_setup.py
 # ✅ Confirms RooCode compatibility
 # ✅ Displays configuration values for easy copy-paste
 
+# Test Qwen developer recommendations
+python test_qwen_features.py
+# ✅ Validates instruction-aware embedding
+# ✅ Tests MRL support and dimension truncation
+# ✅ Verifies task-specific instruction templates
+# ✅ Confirms 1-5% performance optimization features
+
 # Test individual components if needed
 python qdrantsetup.py                 # Test Qdrant setup and indexing
 curl http://localhost:8000/health      # API health check
 curl http://localhost:6333/health      # Qdrant health check
 curl http://localhost:11434/api/tags   # List Ollama models
 ```
+
+## Performance Features
+
+### Qwen Developer Recommendations (Implemented)
+
+🚀 **Instruction-Aware Embedding**  
+- Automatic task-specific instruction formatting
+- 1-5% performance improvement over standard embedding
+- 9 optimized instruction templates for different use cases
+
+🎯 **MRL (Matryoshka Representation Learning)**  
+- Support for 512, 768, and 1024 dimensions
+- Smaller embeddings for faster search when full precision isn't needed
+- Maintains quality with reduced dimensionality
+
+⚡ **Optimized Configuration**  
+- Embedding-only model setup (no text generation overhead)
+- Memory-mapped file loading for faster startup
+- Multi-threaded processing for better performance
+- Optimal context window and rope frequency settings
+
+📊 **Benchmarked Performance**  
+- Q8_0 quantization: Best quality/size balance (610MB)
+- 1024-dimensional embeddings with high semantic accuracy
+- Fast inference optimized for codebase indexing workflows
 
 ## API Endpoints
 
