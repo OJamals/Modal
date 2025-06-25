@@ -1,0 +1,6 @@
+embedding_cache_0_6b/*
+qdrant_storage/*
+.DS_Store
+qwen3-embedding-0.6b.gguf
+__pycache__/*
+.venv/*
