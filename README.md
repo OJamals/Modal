@@ -112,14 +112,15 @@ python optimize_gguf.py hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 qwen3-embeddin
 # Install dependencies
 pip install -r requirements.txt
 
-# Start Qdrant vector database
+# Start Qdrant vector database and create optimized collection
 docker run -d --name qdrant \
     -p 6333:6333 -p 6334:6334 \
     -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" \
     -v $(pwd)/qdrant_storage:/qdrant/storage \
     qdrant/qdrant
+python qdrantsetup.py
 
-# Start OpenAI-compatible API wrapper
+# Start OpenAI-compatible FastAPI wrapper
 python qwen3-api.py &
 ```
 
@@ -223,25 +224,8 @@ results = vs.search("What is Python?", filters={"category": "tech"})
 
 ## Verification & Testing
 
-The setup script automatically runs comprehensive tests, but you can also run them manually:
-
 ```bash
-# Complete system verification (run after setup)
-python test_setup.py
-# ✅ Tests all services and API endpoints
-# ✅ Verifies embedding generation and vector storage
-# ✅ Confirms RooCode compatibility
-# ✅ Displays configuration values for easy copy-paste
-
-# Test Qwen developer recommendations
-python test_qwen_features.py
-# ✅ Validates instruction-aware embedding
-# ✅ Tests MRL support and dimension truncation
-# ✅ Verifies task-specific instruction templates
-# ✅ Confirms 1-5% performance optimization features
-
 # Test individual components if needed
-python qdrantsetup.py                 # Test Qdrant setup and indexing
 curl http://localhost:8000/health      # API health check
 curl http://localhost:6333/health      # Qdrant health check
 curl http://localhost:11434/api/tags   # List Ollama models
@@ -253,7 +237,6 @@ curl http://localhost:11434/api/tags   # List Ollama models
 
 🚀 **Instruction-Aware Embedding**  
 - Automatic task-specific instruction formatting
-- 1-5% performance improvement over standard embedding
 - 9 optimized instruction templates for different use cases
 
 🎯 **MRL (Matryoshka Representation Learning)**  
@@ -262,8 +245,7 @@ curl http://localhost:11434/api/tags   # List Ollama models
 - Maintains quality with reduced dimensionality
 
 ⚡ **Optimized Configuration**  
-- Embedding-only model setup (no text generation overhead)
-- Memory-mapped file loading for faster startup
+- Memory-mapped file loading for faster startup (1-3ms load time)
 - Multi-threaded processing for better performance
 - Optimal context window and rope frequency settings
 
@@ -281,8 +263,6 @@ curl http://localhost:11434/api/tags   # List Ollama models
 
 ## Troubleshooting
 
-### Common Issues
-
 **Ollama model not found:**
 ```bash
 # Check if model exists
@@ -293,8 +273,6 @@ ollama create qwen3-embedding -f Modelfile
 
 **API connection errors:**
 ```bash
-# Check if services are running
-python test_setup.py
 # Restart API if needed
 pkill -f qwen3-api.py
 python qwen3-api.py &
@@ -306,14 +284,6 @@ python qwen3-api.py &
 docker ps | grep qdrant
 # Restart if needed
 docker restart qdrant
-```
-
-**Permission errors with Docker:**
-```bash
-# Add user to docker group (Linux/macOS)
-sudo usermod -aG docker $USER
-# Or run with sudo
-sudo docker run -d --name qdrant ...
 ```
 
 ### Performance Tuning
