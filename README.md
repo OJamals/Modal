@@ -29,16 +29,14 @@ python optimize_gguf.py hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 qwen3-embeddin
 # 2. Install dependencies and start services
 pip install -r requirements.txt
 docker run -d --name qdrant -p 6333:6333 -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
-python qwen3-api.py &
 python qdrantsetup.py
+python qwen3-api.py
 
 # 3. Verify everything works
-python test_setup.py
+python test_qwen_features.py
 ```
 
 **Ready to use with RooCode!** The setup script displays the exact configuration values needed.
-
-## What We Built
 
 This setup provides a complete, optimized embedding pipeline with **Qwen developer recommendations**:
 
@@ -123,19 +121,6 @@ docker run -d --name qdrant \
 
 # Start OpenAI-compatible API wrapper
 python qwen3-api.py &
-```
-
-#### Step 3: Setup Vector Store
-
-```bash
-# Start Qdrant with Docker
-docker run -d --name qdrant -p 6333:6333 -p 6334:6334 -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
-
-# Run optimized setup script
-python qdrantsetup.py
-# ✅ Creates optimized collection with HNSW indexing
-# ✅ Tests embedding API connectivity  
-# ✅ Adds sample documents for validation
 ```
 
 ## RooCode Integration
