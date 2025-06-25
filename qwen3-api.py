@@ -19,15 +19,15 @@ import os
 
 # Universal Configuration with Developer Recommendations
 MODEL_CONFIG = {
-    "model_name": "qwen3-embedding",  # Local optimized model
-    "dimensions": 2560, # 4B = up to 2560, 8B = up to 4096
+    "model_name": "qwen3-embedding",  # Local optimized model, served by Ollama. don't add the :latest suffix
+    "dimensions": 1024,
     "max_context_length": 32768,
     "temperature": 0.0,
     "supports_instructions": True,
     "supports_mrl": True,  # Matryoshka Representation Learning
     "available_dimensions": [512, 768, 1024],  # MRL supported dimensions
-    "quantization": "Q8_0",
-    "size_mb": 2500, # 4B:Q4 = 2500 MB, 8B:Q4 = 4700 MB
+    "quantization": "Q_8",
+    "size_mb": 600,
     "use_case": "Instruction-aware embedding with MRL support",
     "performance_improvement": "1-5% with task-specific instructions"
 }
