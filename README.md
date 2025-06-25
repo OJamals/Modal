@@ -44,14 +44,6 @@ This setup provides a complete, optimized embedding pipeline with **Qwen develop
 - **Task-Specific Templates**: Code search, document retrieval, Q&A, clustering, and more
 - **Complete RooCode Integration**: Ready-to-use with proper API keys and endpoints
 
-### Qwen Developer Recommendations Implemented
-
-✅ **Instruction-Aware Embedding**: Automatic task-specific instruction formatting  
-✅ **MRL (Matryoshka Representation Learning)**: Custom dimension support (512/768/1024)  
-✅ **Performance Optimization**: 1-5% improvement with tailored instructions  
-✅ **Task-Specific Templates**: Optimized for different use cases  
-✅ **Default Configurations**: Works out-of-the-box with optimal settings
-
 ## Services
 
 - **Qwen3-0.6B API**: `http://localhost:8000` (Custom FastAPI wrapper, RooCode Compatible)
