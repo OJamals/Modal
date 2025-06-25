@@ -128,16 +128,6 @@ python qwen3-api.py &
 #### Step 3: Setup Vector Store
 
 ```bash
-# Configure optimized Qdrant collection
-python qdrantsetup.py
-
-# Verify everything works
-python test_setup.py
-```
-
-#### 2.4: Setup Qdrant Vector Store
-
-```bash
 # Start Qdrant with Docker
 docker run -d --name qdrant -p 6333:6333 -p 6334:6334 -e QDRANT__SERVICE__API_KEY="your-super-secret-qdrant-api-key" -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 
