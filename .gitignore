@@ -4,3 +4,6 @@ qdrant_storage/*
 qwen3-embedding-0.6b.gguf
 __pycache__/*
 .venv/*
+instruction_templates/*
+Modelfile*
+*.gguf

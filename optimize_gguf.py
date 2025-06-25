@@ -140,35 +140,28 @@ class GGUFOptimizer:
         modelfile_content = f"""FROM ./{target_name}.gguf
 
 # Qwen Developer Recommendations for Embedding Models
+# Optimized for instruction-aware embedding with 1-5% performance improvement
 
-# Embedding-specific optimizations
+# Context window optimization
 PARAMETER num_ctx 8192
-PARAMETER embedding_only true
 PARAMETER num_thread {os.cpu_count() or 4}
-PARAMETER use_mmap true
-PARAMETER use_mlock false
 
-# Performance tuning
+# Memory management (mmap for faster loading)
+PARAMETER use_mmap true
+
+# Embedding-specific performance tuning
 PARAMETER repeat_penalty 1.0
 PARAMETER temperature 0.0
 PARAMETER top_p 1.0
 
-# Qwen3-Embedding specific settings
-# MRL (Matryoshka Representation Learning) Support
-# Supports custom dimensions: 512, 768, 1024 (full)
-PARAMETER embedding_dimension 1024
+# Instruction-Aware Embedding Template
+# Enables task-specific instructions for better performance
+TEMPLATE \"\"\"{{{{ if .System }}}}{{{{ .System }}}}
 
-# Instruction-Aware Embedding Support
-# The model benefits from task-specific instructions
-# Default instruction template for general embedding tasks
-TEMPLATE \"\"\"{{ if .System }}{{ .System }}{{ end }}{{ if .Prompt }}{{ .Prompt }}{{ end }}\"\"\"
+{{{{ end }}}}{{{{ .Prompt }}}}\"\"\"
 
-# System message for instruction-aware embedding
-SYSTEM \"\"\"You are an embedding model. Process the following text and generate a high-quality vector representation. Focus on semantic meaning and context.\"\"\"
-
-# Additional Qwen optimizations
-PARAMETER rope_frequency_base 1000000
-PARAMETER rope_frequency_scale 1.0
+# Default system message for embedding tasks
+SYSTEM \"\"\"You are an embedding model optimized for semantic understanding. Generate high-quality vector representations that capture semantic meaning and context.\"\"\"
 """
         
         modelfile_path = Path("Modelfile")
@@ -236,28 +229,23 @@ PARAMETER rope_frequency_scale 1.0
 # Qwen3-Embedding Instruction-Aware Template: {config['description']}
 # Based on Qwen developer recommendations for 1-5% performance improvement
 
-# Embedding-specific optimizations
+# Context and performance optimization
 PARAMETER num_ctx 8192
-PARAMETER embedding_only true
 PARAMETER num_thread {os.cpu_count() or 4}
 PARAMETER use_mmap true
-PARAMETER use_mlock false
-
-# MRL Support - Custom dimensions (512, 768, 1024)
-PARAMETER embedding_dimension 1024
 
 # Task-specific instruction template
-TEMPLATE \"\"\"{{ if .System }}{{ .System }}
-{{ end }}{config['instruction']} {{ .Prompt }}\"\"\"
+TEMPLATE \"\"\"{{{{ if .System }}}}{{{{ .System }}}}
 
+{{{{ end }}}}{config['instruction']} {{{{ .Prompt }}}}\"\"\"
+
+# Task-specific system message
 SYSTEM \"\"\"{config['system']}\"\"\"
 
-# Performance settings
+# Embedding performance settings
 PARAMETER repeat_penalty 1.0
 PARAMETER temperature 0.0
 PARAMETER top_p 1.0
-PARAMETER rope_frequency_base 1000000
-PARAMETER rope_frequency_scale 1.0
 """
             
             template_file = templates_dir / f"Modelfile.{task}"
@@ -299,6 +287,28 @@ def main():
     """Main entry point."""
     optimizer = GGUFOptimizer()
     
+    # Handle help and usage
+    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help', 'help']:
+        print("🔧 GGUF Model Optimizer for Qwen3-Embedding")
+        print("=" * 50)
+        print("Usage:")
+        print("  python optimize_gguf.py                           # Interactive mode")
+        print("  python optimize_gguf.py <model_name>              # Optimize specific model")
+        print("  python optimize_gguf.py <model_name> <output_name> # Custom output name")
+        print()
+        print("Examples:")
+        print("  python optimize_gguf.py")
+        print("  python optimize_gguf.py 'hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0'")
+        print("  python optimize_gguf.py 'hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0' 'my-qwen3'")
+        print()
+        print("Features:")
+        print("• Extracts GGUF from Ollama storage")
+        print("• Creates optimized Modelfile with Qwen recommendations")  
+        print("• Supports instruction-aware embedding")
+        print("• Implements MRL (Matryoshka Representation Learning)")
+        print("• Generates task-specific templates")
+        return 0
+    
     if len(sys.argv) > 1:
         model_name = sys.argv[1]
         output_name = sys.argv[2] if len(sys.argv) > 2 else "qwen3-embedding"
@@ -309,9 +319,10 @@ def main():
         
         if not models:
             print("❌ No Qwen3 embedding models found in Ollama.")
-            print("\nTo download a model, try:")
+            print("\n💡 To download a model, try:")
             print("  ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0")
             print("  ollama pull hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q4_K_M")
+            print("\n🔧 Or run with --help for usage information")
             return 1
         
         print("\n📋 Available Qwen3 embedding models:")
@@ -320,7 +331,10 @@ def main():
         
         # Get user selection
         try:
-            choice = input(f"\nSelect model (1-{len(models)}): ").strip()
+            choice = input(f"\nSelect model (1-{len(models)}, or 'q' to quit): ").strip()
+            if choice.lower() in ['q', 'quit', 'exit']:
+                print("👋 Goodbye!")
+                return 0
             model_idx = int(choice) - 1
             if model_idx < 0 or model_idx >= len(models):
                 raise ValueError("Invalid selection")
