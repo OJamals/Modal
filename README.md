@@ -2,7 +2,7 @@
 
 Qwen3-embedding has topped embedding benchmarks, easily beating both open and close-source models. This project provides tools to **optimize any Qwen3-Embedding GGUF model** downloaded through Ollama, with an OpenAI-compatible API wrapper and optimized Qdrant vector store.
 
-**🎯 Fully RooCode Compatible!** - Works seamlessly with Cline tributaries Roo & KiloCode.
+**🎯 Fully RooCode Compatible!** - Works seamlessly with Cline tributaries Roo & Kilo Code.
 
 ## Quick Start
 
@@ -111,7 +111,7 @@ Collection Name: qwen3_embedding
 
 ## Usage Examples
 
-### OpenAI-Compatible Embedding API with Advanced Qwen Features
+*OpenAI-Compatible Embedding API*
 ```python
 import requests
 
@@ -149,7 +149,6 @@ response = requests.post("http://localhost:8000/v1/embeddings", json={
 embeddings = response.json()["data"][0]["embedding"]
 print(f"Generated {len(embeddings)}-dimensional embedding")
 ```
-
 
 ## Verification & Testing
 
