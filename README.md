@@ -89,18 +89,16 @@ Collection Name: qwen3_embedding
 - 1024-dimensional embeddings with high semantic accuracy
 - Fast inference optimized for codebase indexing workflows
 
- **Automated Task-Specific Custom Instructions**
-# Available tasks with automatic instruction formatting:
-tasks = [
-    "text_search",      # General semantic search (default)
-    "code_search",      # Code and programming tasks  
-    "document_retrieval", # Document and text retrieval
-    "question_answering", # Q&A systems
-    "clustering",       # Text clustering and categorization
-    "classification",   # Classification tasks
-    "similarity",       # Semantic similarity comparison
-    "general"          # General purpose embedding
-]
+**Automatic instruction formatting**
+tasks =
+- "text_search",      # General semantic search (default)
+- "code_search",      # Code and programming tasks  
+- "document_retrieval", # Document and text retrieval
+- "question_answering", # Q&A systems
+- "clustering",       # Text clustering and categorization
+- "classification",   # Classification tasks
+- "similarity",       # Semantic similarity comparison
+- "general"          # General purpose embedding
 
 # Each task automatically applies the optimal instruction format
 
