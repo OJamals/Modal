@@ -90,7 +90,7 @@ Collection Name: qwen3_embedding
 - Fast inference optimized for codebase indexing workflows
 
 **Automatic instruction formatting**
-tasks =
+
 - "text_search",      # General semantic search (default)
 - "code_search",      # Code and programming tasks  
 - "document_retrieval", # Document and text retrieval
@@ -100,7 +100,7 @@ tasks =
 - "similarity",       # Semantic similarity comparison
 - "general"          # General purpose embedding
 
-# Each task automatically applies the optimal instruction format
+*Each task automatically applies the optimal instruction format*
 
 ## API Endpoints
 
